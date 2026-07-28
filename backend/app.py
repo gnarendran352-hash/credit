@@ -665,9 +665,12 @@ async def get_dataset_info():
 @app.post("/simulation/start")
 async def start_simulation():
     simulation_id = str(uuid.uuid4())
+    csv_path = DATASET_PATH if os.path.exists(DATASET_PATH) else None
+    if csv_path is None:
+        print(f"Dataset not found at {DATASET_PATH}; starting simulation in demo mode without CSV")
     try:
         engine = SimulationEngine(
-            csv_path=DATASET_PATH,
+            csv_path=csv_path,
             model=model,
             feature_importance=FEATURE_IMPORTANCE
         )
