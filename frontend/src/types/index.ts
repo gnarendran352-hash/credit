@@ -19,7 +19,7 @@ export interface PredictionResult {
   top_features: { feature: string; importance: number }[];
   prediction_time_ms: number;
   model_used: string;
-  explanation: string;
+  explanation: string | Record<string, any>;
   recommended_action: 'approve' | 'review' | 'block';
 }
 

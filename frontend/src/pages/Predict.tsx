@@ -206,7 +206,7 @@ const Predict: React.FC = () => {
                       {result.recommended_action === 'approve' ? 'Approve Transaction' : result.recommended_action === 'review' ? 'Manual Review Required' : 'Block Transaction'}
                     </span>
                   </div>
-                  <p className="text-xs text-white/50">{result.explanation}</p>
+                  <p className="text-xs text-white/50">{typeof result.explanation === 'string' ? result.explanation : JSON.stringify(result.explanation)}</p>
                 </div>
               </GlassCard>
             </motion.div>
