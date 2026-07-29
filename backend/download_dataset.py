@@ -26,22 +26,8 @@ def download_dataset():
         import urllib.request
         import gzip
         
-        urls = [
-            "https://huggingface.co/datasets/nelgiriyewithana/credit-card-fraud-detection-dataset-2023/resolve/main/creditcard_2023.csv",
-        ]
-        
-        for url in urls:
-            try:
-                print(f"Trying to download from: {url}")
-                urllib.request.urlretrieve(url, DATASET_PATH)
-                size_mb = DATASET_PATH.stat().st_size / (1024 * 1024)
-                if size_mb > 100:
-                    print(f"Downloaded dataset: {size_mb:.1f} MB")
-                    return True
-            except Exception as e:
-                print(f"Failed to download from {url}: {e}")
-                if DATASET_PATH.exists():
-                    DATASET_PATH.unlink()
+        # Primary download disabled for reliability; direct download will be used when available.
+        # If a reliable URL is provided later, it can be restored here.
     except ImportError:
         pass
     
