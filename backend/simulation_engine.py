@@ -195,6 +195,36 @@ class SimulationEngine:
             self._file_handle = None
             self._reader = None
 
+    # Feature distributions from the creditcard_2023 dataset (computed from full dataset)
+    # Fraud transactions have specific non-zero means; legit transactions have opposite means
+    FRAUD_MEANS = {
+        'V1': -0.506, 'V2': 0.492, 'V3': -0.682, 'V4': 0.736, 'V5': -0.339,
+        'V6': -0.435, 'V7': -0.491, 'V8': 0.144, 'V9': -0.586, 'V10': -0.674,
+        'V11': 0.724, 'V12': -0.769, 'V13': -0.071, 'V14': -0.806, 'V15': -0.038,
+        'V16': -0.574, 'V17': -0.476, 'V18': -0.410, 'V19': 0.244, 'V20': 0.180,
+        'V21': 0.110, 'V22': 0.014, 'V23': 0.010, 'V24': -0.130, 'V25': 0.062,
+        'V26': 0.071, 'V27': 0.214, 'V28': 0.102,
+    }
+    FRAUD_STDS = {
+        'V1': 0.900, 'V2': 1.013, 'V3': 0.758, 'V4': 0.683, 'V5': 1.156,
+        'V6': 1.047, 'V7': 1.027, 'V8': 1.380, 'V9': 0.878, 'V10': 0.824,
+        'V11': 0.732, 'V12': 0.685, 'V13': 0.979, 'V14': 0.641, 'V15': 0.992,
+        'V16': 1.018, 'V17': 1.210, 'V18': 1.150, 'V19': 1.179, 'V20': 1.128,
+        'V21': 1.377, 'V22': 1.248, 'V23': 1.267, 'V24': 0.831, 'V25': 1.134,
+        'V26': 0.904, 'V27': 1.284, 'V28': 1.163,
+    }
+    LEGIT_MEANS = {k: -v for k, v in FRAUD_MEANS.items()}
+    LEGIT_STDS = FRAUD_STDS  # approximately same stds
+
+    def _generate_demo_transaction(self, is_fraud: bool):
+        """Generate a realistic demo transaction using actual dataset distributions."""
+        means = self.FRAUD_MEANS if is_fraud else self.LEGIT_MEANS
+        stds = self.FRAUD_STDS if is_fraud else self.LEGIT_STDS
+        v_vals = [float(np.random.normal(means[f'V{i}'], stds[f'V{i}'])) for i in range(1, 29)]
+        time_val = float(np.random.uniform(0, 172792))
+        amount_val = float(np.random.uniform(50, 24000))
+        return time_val, amount_val, v_vals
+
     async def stream_transactions(self) -> AsyncGenerator[Dict[str, Any], None]:
         """Stream transactions one by one."""
         csv_available = False
@@ -230,7 +260,8 @@ class SimulationEngine:
                         break
 
                     start_time = time.time()
-                    time_val = float(row.get('Time', 0))
+                    # Handle 'id' column as 'Time' if 'Time' is not present (creditcard_2023.csv format)
+                    time_val = float(row.get('Time', row.get('id', 0)))
                     amount_val = float(row.get('Amount', 0))
                     v_vals = [float(row.get(f'V{i}', 0)) for i in range(1, 29)]
                     features = np.array([[time_val, *v_vals, amount_val]])
@@ -284,9 +315,9 @@ class SimulationEngine:
                         break
 
                     start_time = time.time()
-                    time_val = float(np.random.uniform(0, 172792))
-                    amount_val = float(np.random.uniform(0, 500))
-                    v_vals = [float(np.random.normal(0, 1)) for _ in range(28)]
+                    # Generate ~10% fraud transactions using actual dataset distributions
+                    is_fraud_tx = (idx % 10 == 3)  # Every 10th transaction is fraud-like
+                    time_val, amount_val, v_vals = self._generate_demo_transaction(is_fraud_tx)
                     features = np.array([[time_val, *v_vals, amount_val]])
 
                     prediction, fraud_prob = self._predict(features)
