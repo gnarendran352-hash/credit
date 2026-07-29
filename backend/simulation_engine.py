@@ -236,6 +236,8 @@ class SimulationEngine:
                 csv_available = True
             except Exception:
                 csv_available = False
+                self.total_rows = 0
+                self.current_index = 0
 
         if not csv_available and self.total_rows == 0:
             self.total_rows = 200
