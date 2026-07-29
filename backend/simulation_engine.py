@@ -176,7 +176,9 @@ class SimulationEngine:
         self._file_handle = open(self.csv_path, 'r', newline='', encoding='utf-8')
         self._reader = csv.DictReader(self._file_handle)
         self._header = self._reader.fieldnames or []
-        self.total_rows = sum(1 for _ in open(self.csv_path, 'r', encoding='utf-8')) - 1
+        # Count total rows but cap at a reasonable limit for streaming performance
+        total = sum(1 for _ in open(self.csv_path, 'r', encoding='utf-8')) - 1
+        self.total_rows = min(total, 2000)  # Cap at 2000 for simulation performance
         self._file_handle.seek(0)
         self._reader = csv.DictReader(self._file_handle)
         self.current_index = 0

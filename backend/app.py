@@ -637,6 +637,17 @@ async def get_pr_data():
     return {"recall": recall, "precision": precision}
 
 
+# ── Dataset Auto-Download ──────────────────────
+import importlib
+try:
+    import download_dataset
+    if download_dataset.download_dataset():
+        print("Dataset downloaded successfully for simulation")
+    else:
+        print("Using demo mode for simulation (no dataset available)")
+except Exception as e:
+    print(f"Dataset download skipped: {e}")
+
 # ── Simulation Engine ───────────────────────────
 from simulation_engine import SimulationEngine, DATASET_PATH
 from fastapi.responses import StreamingResponse
