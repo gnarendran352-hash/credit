@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
-DATASET_PATH = BASE_DIR / 'creditcard_2023.csv'
+DATASET_PATH = BASE_DIR / 'dataset' / 'creditcard.csv'
 
 
 def download_dataset():

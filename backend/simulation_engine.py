@@ -19,7 +19,7 @@ import numpy as np
 
 # Configure dataset path
 BASE_DIR = Path(__file__).parent.parent  # Go up to Credit/ root
-DATASET_PATH = os.environ.get('DATASET_PATH', str(BASE_DIR / 'creditcard_2023.csv'))
+DATASET_PATH = os.environ.get('DATASET_PATH', str(BASE_DIR / 'dataset' / 'creditcard.csv'))
 
 
 class SimulationEngine:
