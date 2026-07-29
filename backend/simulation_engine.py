@@ -208,6 +208,12 @@ class SimulationEngine:
         if not csv_available and self.total_rows == 0:
             self.total_rows = 200
 
+        # Initialize stats if load_csv() was not called (demo mode without CSV)
+        if self._stats['start_time'] is None:
+            self._stats['start_time'] = time.time()
+        if self._stats['last_batch_time'] is None:
+            self._stats['last_batch_time'] = time.time()
+
         self.is_running = True
         self.is_paused = False
 

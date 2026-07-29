@@ -41,6 +41,10 @@ venv.bak/
 # --- Model Files ---
 # NOTE: Model file is required for production deployment on Render
 # credit_card_fraud_model.pkl
+
+# --- Large Dataset Files ---
+# CSV dataset exceeds GitHub's 100MB limit; keep local only
+creditcard_2023.csv
 # --- Logs ---
 logs/
 *.log
