@@ -639,7 +639,7 @@ async def get_pr_data():
 
 # ── Simulation Engine ───────────────────────────
 from simulation_engine import SimulationEngine, DATASET_PATH
-from fastapi import Response
+from fastapi.responses import StreamingResponse
 
 simulation_engines: Dict[str, SimulationEngine] = {}
 
@@ -713,7 +713,7 @@ async def stream_simulation(simulation_id: str):
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-    return Response(generate(), media_type="text/event-stream")
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 
 if __name__ == "__main__":
