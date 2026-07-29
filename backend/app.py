@@ -22,6 +22,7 @@ app = FastAPI(title="AI Credit Card Fraud Detection API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://credit-zbr7.onrender.com",
         "https://credit-cardii.web.app",
         "https://credit-cardii.firebaseapp.com",
         "http://localhost:5173",
