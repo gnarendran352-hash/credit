@@ -23,12 +23,12 @@ const ModelEvaluation: React.FC = () => {
 
   const rocChartData = rocData?.fpr?.map((fpr: number, i: number) => ({
     fpr: fpr,
-    tpr: rocData.tpr[i],
+    tpr: rocData?.tpr?.[i] ?? 0,
   })) || [];
 
   const prChartData = prData?.recall?.map((recall: number, i: number) => ({
     recall: recall,
-    precision: prData.precision[i],
+    precision: prData?.precision?.[i] ?? 0,
   })) || [];
 
   const cm = metrics?.confusion_matrix;

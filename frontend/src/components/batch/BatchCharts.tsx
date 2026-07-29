@@ -168,6 +168,61 @@ const BatchCharts: React.FC<BatchChartsProps> = ({ predictions }) => {
           </div>
         </GlassCard>
       )}
+
+      {/* Average Risk Score Gauge */}
+      <GlassCard gradient>
+        <h3 className="text-lg font-semibold text-white mb-4">Average Risk Score</h3>
+        <div className="h-64 flex items-center justify-center">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={[
+                  { name: 'Risk', value: predictions.reduce((s, p) => s + p.risk_score, 0) / (predictions.length || 1), color: '#3b82f6' },
+                ]}
+                cx="50%" cy="50%"
+                innerRadius={70} outerRadius={110}
+                startAngle={180} endAngle={0}
+                paddingAngle={0}
+                dataKey="value"
+                animationDuration={1500}
+              >
+                <Cell fill="#3b82f6" />
+              </Pie>
+              <text x="50%" y="50%" textAnchor="middle" dy="0.5em" fill="white" fontSize="24" fontWeight="bold">
+                {(predictions.reduce((s, p) => s + p.risk_score, 0) / (predictions.length || 1)).toFixed(0)}
+              </text>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </GlassCard>
+
+      {/* Confidence Distribution */}
+      <GlassCard gradient>
+        <h3 className="text-lg font-semibold text-white mb-4">Confidence Distribution</h3>
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={predictions.reduce((acc: any[], p) => {
+                const bin = Math.floor(p.confidence / 10) * 10;
+                const existing = acc.find(a => a.range === `${bin}-${bin + 10}`);
+                if (existing) existing.count += 1;
+                else acc.push({ range: `${bin}-${bin + 10}`, count: 1 });
+                return acc;
+              }, []).sort((a, b) => parseInt(a.range) - parseInt(b.range))}
+              margin={{ left: 20 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="range" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+              <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+              <Tooltip contentStyle={{
+                background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '12px', color: '#fff',
+              }} />
+              <Bar dataKey="count" fill="#06b6d4" radius={[4, 4, 0, 0]} animationDuration={1500} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </GlassCard>
     </div>
   );
 };

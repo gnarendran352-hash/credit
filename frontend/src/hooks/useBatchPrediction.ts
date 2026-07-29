@@ -96,7 +96,10 @@ export const useBatchPrediction = (userId?: string) => {
       }
 
       const predictions: BatchResultWithClass[] = response.predictions.map((p, idx) => {
-        const result: BatchResultWithClass = { ...p };
+        const result: BatchResultWithClass = { 
+          ...p,
+          explanation: typeof p.explanation === 'string' ? p.explanation : undefined,
+        };
         if (hasClass && classValues[idx] !== undefined) {
           const actualClass = classValues[idx]!;
           result.actual_class = actualClass;

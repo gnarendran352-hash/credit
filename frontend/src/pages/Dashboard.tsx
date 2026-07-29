@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { CreditCard, Shield, CheckCircle, AlertTriangle, TrendingUp, Brain, Activity } from 'lucide-react';
+import { CreditCard, Shield, CheckCircle, AlertTriangle, TrendingUp, Brain, Activity, Zap } from 'lucide-react';
 import GlassCard from '../components/ui/GlassCard';
+import RiskGauge from '../components/ui/RiskGauge';
 import { getHealthStatus, getModelMetrics } from '../services/api';
 import { BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const statCards = [
-  { title: 'Total Transactions', value: '284,807', icon: CreditCard, change: '+12.5%', color: 'from-blue-500 to-cyan-500' },
-  { title: 'Fraud Detected', value: '492', icon: AlertTriangle, change: '-2.1%', color: 'from-red-500 to-orange-500' },
-  { title: 'Legitimate', value: '284,315', icon: CheckCircle, change: '+12.7%', color: 'from-emerald-500 to-teal-500' },
-  { title: 'Fraud Rate', value: '0.17%', icon: Shield, change: '-0.02%', color: 'from-purple-500 to-pink-500' },
+  { title: 'Total Transactions', value: '284,807', icon: CreditCard, change: '+12.5%', color: 'from-blue-500 to-cyan-500', subtext: 'All time' },
+  { title: 'Fraud Detected', value: '492', icon: AlertTriangle, change: '-2.1%', color: 'from-red-500 to-orange-500', subtext: 'Flagged transactions' },
+  { title: 'Legitimate', value: '284,315', icon: CheckCircle, change: '+12.7%', color: 'from-emerald-500 to-teal-500', subtext: 'Safe transactions' },
+  { title: 'Fraud Rate', value: '0.17%', icon: Shield, change: '-0.02%', color: 'from-purple-500 to-pink-500', subtext: 'Of total volume' },
 ];
 
 const pieData = [
@@ -27,6 +28,15 @@ const dailyData = [
   { day: 'Sun', fraud: 52, legitimate: 25600 },
 ];
 
+const fraudTrendData = [
+  { time: '10:28', fraud: 1, legitimate: 120, risk: 12 },
+  { time: '10:29', fraud: 0, legitimate: 145, risk: 18 },
+  { time: '10:30', fraud: 2, legitimate: 132, risk: 34 },
+  { time: '10:31', fraud: 1, legitimate: 128, risk: 22 },
+  { time: '10:32', fraud: 3, legitimate: 156, risk: 45 },
+  { time: '10:33', fraud: 0, legitimate: 140, risk: 15 },
+  { time: '10:34', fraud: 1, legitimate: 138, risk: 28 },
+];
 const riskData = [
   { range: '0-10', count: 120000 },
   { range: '11-30', count: 98000 },
@@ -63,9 +73,16 @@ const Dashboard: React.FC = () => {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
+        className="flex items-center justify-between"
       >
-        <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-        <p className="text-white/40 mt-1">Real-time fraud detection overview</p>
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">Dashboard</h1>
+          <p className="text-white/40 mt-1">Real-time fraud detection overview</p>
+        </div>
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+          <span className="text-xs text-emerald-400 font-medium">System Online</span>
+        </div>
       </motion.div>
 
       {/* Stat Cards */}
@@ -82,13 +99,29 @@ const Dashboard: React.FC = () => {
                 <div>
                   <p className="text-sm text-white/40">{card.title}</p>
                   <p className="text-2xl font-bold text-white mt-1">{card.value}</p>
-                  <p className={`text-xs mt-1 ${card.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {card.change} vs last month
-                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-xs font-medium ${card.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {card.change}
+                    </span>
+                    <span className="text-xs text-white/30">vs last month</span>
+                  </div>
                 </div>
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center shadow-lg`}>
-                  <card.icon className="w-5 h-5 text-white" />
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center shadow-lg shadow-${card.color.split(' ')[0].replace('from-', '')}/30`}>
+                  <card.icon className="w-6 h-6 text-white" />
                 </div>
+              </div>
+              {/* Mini sparkline bar */}
+              <div className="flex gap-0.5 mt-4">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ height: 0 }}
+                    animate={{ height: Math.random() * 24 + 4 }}
+                    transition={{ delay: 0.5 + i * 0.05, duration: 0.5 }}
+                    className={`w-1.5 rounded-full bg-gradient-to-t ${card.color} opacity-50`}
+                    style={{ height: `${Math.random() * 24 + 4}px` }}
+                  />
+                ))}
               </div>
             </GlassCard>
           </motion.div>
@@ -99,7 +132,10 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Pie Chart */}
         <GlassCard gradient>
-          <h3 className="text-lg font-semibold text-white mb-4">Fraud vs Legitimate</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Fraud vs Legitimate</h3>
+            <span className="text-xs text-white/30 px-2 py-1 rounded-lg bg-white/5">Distribution</span>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -143,10 +179,22 @@ const Dashboard: React.FC = () => {
 
         {/* Daily Predictions */}
         <GlassCard gradient className="lg:col-span-2">
-          <h3 className="text-lg font-semibold text-white mb-4">Daily Predictions</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Fraud Trend</h3>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-xs text-white/40">Legitimate</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <span className="text-xs text-white/40">Fraud</span>
+              </div>
+            </div>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={dailyData}>
+              <AreaChart data={fraudTrendData}>
                 <defs>
                   <linearGradient id="fraudGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
@@ -158,7 +206,7 @@ const Dashboard: React.FC = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="day" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+                <XAxis dataKey="time" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
                 <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{
@@ -177,10 +225,13 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Bottom Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Risk Distribution */}
         <GlassCard gradient>
-          <h3 className="text-lg font-semibold text-white mb-4">Risk Distribution</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Risk Distribution</h3>
+            <span className="text-xs text-white/30 px-2 py-1 rounded-lg bg-white/5">Score Ranges</span>
+          </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={riskData}>
@@ -206,41 +257,77 @@ const Dashboard: React.FC = () => {
           </div>
         </GlassCard>
 
-        {/* Backend Status & Metrics */}
+        {/* Risk Gauge */}
         <GlassCard gradient>
-          <h3 className="text-lg font-semibold text-white mb-4">System Status</h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
-              <div className="flex items-center gap-3">
-                <div className={`w-2 h-2 rounded-full ${health?.status === 'healthy' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
-                <span className="text-sm text-white/60">Backend Status</span>
-              </div>
-              <span className="text-sm text-white/80">{health?.status || 'Checking...'}</span>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Risk Score</h3>
+            <span className="text-xs text-white/30 px-2 py-1 rounded-lg bg-white/5">Current</span>
+          </div>
+          <div className="flex items-center justify-center">
+            <RiskGauge value={45.5} size={200} label="Average Risk" />
+          </div>
+          <div className="grid grid-cols-3 gap-2 mt-4">
+            <div className="text-center p-2 rounded-lg bg-white/5">
+              <div className="text-xs text-white/40">Low</div>
+              <div className="text-sm font-semibold text-emerald-400">0-30</div>
             </div>
-            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+            <div className="text-center p-2 rounded-lg bg-white/5">
+              <div className="text-xs text-white/40">Medium</div>
+              <div className="text-sm font-semibold text-yellow-400">31-70</div>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-white/5">
+              <div className="text-xs text-white/40">High</div>
+              <div className="text-sm font-semibold text-red-400">71-100</div>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* System Status */}
+        <GlassCard gradient>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">System Status</h3>
+            <div className={`w-2 h-2 rounded-full ${health?.status === 'healthy' ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
               <div className="flex items-center gap-3">
-                <Brain className="w-4 h-4 text-blue-400" />
-                <span className="text-sm text-white/60">Model Loaded</span>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm text-white/60">Backend</span>
               </div>
-              <span className={`text-sm ${health?.model_loaded ? 'text-emerald-400' : 'text-yellow-400'}`}>
-                {health?.model_loaded ? 'Yes' : 'No (Demo)'}
+              <span className="text-sm font-medium text-white/80">{health?.status || 'Checking...'}</span>
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <Brain className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-sm text-white/60">Model</span>
+              </div>
+              <span className={`text-sm font-medium ${health?.model_loaded ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                {health?.model_loaded ? 'Active' : 'Demo Mode'}
               </span>
             </div>
             {metrics && (
               <>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
                   <div className="flex items-center gap-3">
-                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-white" />
+                    </div>
                     <span className="text-sm text-white/60">Accuracy</span>
                   </div>
-                  <span className="text-sm text-white/80">{(metrics.accuracy * 100).toFixed(2)}%</span>
+                  <span className="text-sm font-medium text-white/80">{((metrics?.accuracy ?? 0) * 100).toFixed(2)}%</span>
                 </div>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
                   <div className="flex items-center gap-3">
-                    <Activity className="w-4 h-4 text-purple-400" />
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
+                      <Activity className="w-4 h-4 text-white" />
+                    </div>
                     <span className="text-sm text-white/60">ROC-AUC</span>
                   </div>
-                  <span className="text-sm text-white/80">{metrics.roc_auc.toFixed(4)}</span>
+                  <span className="text-sm font-medium text-white/80">{(metrics?.roc_auc ?? 0).toFixed(4)}</span>
                 </div>
               </>
             )}

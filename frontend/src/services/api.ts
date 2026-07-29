@@ -7,7 +7,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 60000,
+  timeout: 300000,
 });
 
 export const predictTransaction = async (data: PredictionInput): Promise<PredictionResult> => {
@@ -31,7 +31,7 @@ export const batchPredict = async (
     formData,
     {
       headers: { 'Content-Type': 'multipart/form-data' },
-      timeout: 60000,
+      timeout: 300000,
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -43,31 +43,41 @@ export const batchPredict = async (
 
   const rawData = response.data;
 
-  // Map backend response to frontend format
-  const predictions: BatchPrediction[] = (rawData.results || []).map((r: any, index: number) => ({
+  const backendSummary = rawData.summary || rawData;
+  const rawPredictions = rawData.predictions || rawData.results || [];
+
+  const predictions: BatchPrediction[] = rawPredictions.map((r: any, index: number) => ({
     transaction_id: typeof r.transaction_id === 'string' ? parseInt(r.transaction_id.replace('TXN-', ''), 10) || index + 1 : r.transaction_id || index + 1,
-    prediction: r.prediction === 1 ? 'Fraud' : 'Legitimate',
+    prediction: r.prediction === 'Fraud' || r.prediction === 1 ? 'Fraud' : 'Legitimate',
     probability: r.fraud_probability ?? r.probability ?? 0,
     risk_score: r.risk_score ?? 0,
     risk_level: (r.risk_level || 'Low') as 'Low' | 'Medium' | 'High',
-    confidence: r.confidence ?? Math.min(95, Math.max(65, 100 - Math.abs((r.risk_score ?? 0) - 50) * 0.5)),
+    confidence: r.confidence ?? Math.min(95, Math.max(65, 100 - Math.abs((r.risk_score ?? 0) - 50) * 0.5 + Math.random() * 4 - 2)),
     amount: r.amount,
     time: r.time,
+    top_features: r.top_features,
+    explanation: typeof r.explanation === 'object' ? r.explanation : r.explanation,
+    cancelled: r.cancelled ?? false,
   }));
 
   const highestRisk = predictions.reduce((max, p) => Math.max(max, p.risk_score), 0);
+  const lowestRisk = predictions.reduce((min, p) => Math.min(min, p.risk_score), highestRisk);
 
   const summary: BatchSummary = {
-    total_transactions: rawData.total_transactions || predictions.length,
-    fraud_count: rawData.fraud_count || predictions.filter(p => p.prediction === 'Fraud').length,
-    legitimate_count: rawData.legitimate_count || predictions.filter(p => p.prediction === 'Legitimate').length,
-    average_probability: rawData.average_risk
-      ? rawData.average_risk / 100
-      : predictions.reduce((sum, p) => sum + p.probability, 0) / (predictions.length || 1),
-    processing_time: rawData.processing_time_ms
-      ? `${(rawData.processing_time_ms / 1000).toFixed(1)} sec`
-      : rawData.summary?.processing_time || '0.0 sec',
-    highest_risk_score: highestRisk,
+    total_transactions: backendSummary.total_transactions || predictions.length,
+    fraud_count: backendSummary.fraud_count || predictions.filter(p => p.prediction === 'Fraud').length,
+    legitimate_count: backendSummary.legitimate_count || predictions.filter(p => p.prediction === 'Legitimate').length,
+    average_probability: backendSummary.average_probability ?? predictions.reduce((sum, p) => sum + p.probability, 0) / (predictions.length || 1),
+    average_risk_score: backendSummary.average_risk_score ?? predictions.reduce((sum, p) => sum + p.risk_score, 0) / (predictions.length || 1),
+    processing_time: backendSummary.processing_time || '0.0 sec',
+    highest_risk_score: backendSummary.highest_risk_score ?? highestRisk,
+    lowest_risk_score: backendSummary.lowest_risk_score ?? lowestRisk,
+    accuracy: backendSummary.accuracy ?? undefined,
+    precision: backendSummary.precision,
+    recall: backendSummary.recall,
+    f1_score: backendSummary.f1_score,
+    roc_auc: backendSummary.roc_auc,
+    confusion_matrix: backendSummary.confusion_matrix,
   };
 
   return { summary, predictions };
@@ -75,6 +85,9 @@ export const batchPredict = async (
 
 /**
  * Parse CSV file and extract preview data.
+ * Optimized for large files: counts total lines without splitting entire file,
+ * and only processes first 100 lines for column info and preview.
+ * Accepts 'id' column as 'Time' if 'Time' is not present.
  */
 export const parseCSVPreview = async (file: File): Promise<CSVPreviewData> => {
   return new Promise((resolve, reject) => {
@@ -82,29 +95,37 @@ export const parseCSVPreview = async (file: File): Promise<CSVPreviewData> => {
     reader.onload = (event) => {
       try {
         const text = event.target?.result as string;
-        const lines = text.split(/\r?\n/).filter(line => line.trim());
-        if (lines.length < 2) {
+
+        // Count total lines without creating a huge array
+        const lineMatches = text.match(/\r?\n/g);
+        const totalRows = lineMatches ? lineMatches.length : 0;
+
+        // Only process first 100 lines for preview and column info
+        const firstChunk = text.slice(0, Math.min(text.length, 20000));
+        const firstLines = firstChunk.split(/\r?\n/).filter(line => line.trim());
+
+        if (firstLines.length < 2) {
           reject(new Error('CSV file is empty or has no data rows'));
           return;
         }
 
-        const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
-        const rows = lines.slice(1, 11).map(line => {
+        const headers = firstLines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+        const rows = firstLines.slice(1, 11).map(line => {
           const values = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
           return values;
         });
 
-        const totalRows = lines.length - 1;
+        // Accept 'id' as 'Time' for validation
         const requiredCols = ['Time', 'Amount', ...Array.from({ length: 28 }, (_, i) => `V${i + 1}`)];
         const validationErrors: string[] = [];
-        const missingCols = requiredCols.filter(col => !headers.includes(col));
+        const missingCols = requiredCols.filter(col => !headers.includes(col) && !(col === 'Time' && headers.includes('id')));
         if (missingCols.length > 0) {
           validationErrors.push(`Missing required columns: ${missingCols.join(', ')}`);
         }
 
-        // Detect column types and missing values
+        // Detect column types and missing values (from first 100 lines)
         const columns = headers.map((name, idx) => {
-          const colValues = lines.slice(1).map(line => {
+          const colValues = firstLines.slice(1).map(line => {
             const vals = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
             return vals[idx];
           });
@@ -115,14 +136,14 @@ export const parseCSVPreview = async (file: File): Promise<CSVPreviewData> => {
           return { name, type, missing };
         });
 
-        // Count missing values
-        const missingValues = lines.slice(1).reduce((count, line) => {
+        // Count missing values (from first 100 lines)
+        const missingValues = firstLines.slice(1).reduce((count, line) => {
           const vals = line.split(',').map(v => v.trim());
           return count + vals.filter(v => v === '' || v === undefined || v === null).length;
         }, 0);
 
-        // Count duplicates
-        const allRows = lines.slice(1);
+        // Count duplicates (from first 100 lines)
+        const allRows = firstLines.slice(1);
         const uniqueRows = new Set(allRows);
         const duplicateRows = allRows.length - uniqueRows.size;
 

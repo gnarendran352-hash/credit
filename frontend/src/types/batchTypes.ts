@@ -9,6 +9,9 @@ export interface BatchPrediction {
   confidence: number;
   amount?: number;
   time?: number;
+  top_features?: Array<{ feature: string; importance: number }>;
+  explanation?: string | Record<string, any>;
+  cancelled?: boolean;
 }
 
 export interface BatchSummary {
@@ -16,9 +19,21 @@ export interface BatchSummary {
   fraud_count: number;
   legitimate_count: number;
   average_probability: number;
+  average_risk_score: number;
   processing_time: string;
   highest_risk_score?: number;
+  lowest_risk_score?: number;
   accuracy?: number;
+  precision?: number;
+  recall?: number;
+  f1_score?: number;
+  roc_auc?: number;
+  confusion_matrix?: {
+    true_negatives: number;
+    false_positives: number;
+    false_negatives: number;
+    true_positives: number;
+  };
 }
 
 export interface BatchPredictionResponse {
@@ -55,6 +70,8 @@ export interface BatchResultWithClass extends BatchPrediction {
   actual_class?: number;
   actual_label?: 'Fraud' | 'Legitimate';
   is_correct?: boolean;
+  top_features?: Array<{ feature: string; importance: number }>;
+  explanation?: string;
 }
 
 export interface BatchResultFull {

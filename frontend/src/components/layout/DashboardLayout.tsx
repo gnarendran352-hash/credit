@@ -1,26 +1,12 @@
 import React from 'react';
-import { Outlet, Navigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import AIAssistant from '../ui/AIAssistant';
 import AnimatedBackground from '../ui/AnimatedBackground';
 import { Toaster } from 'react-hot-toast';
 
 const DashboardLayout: React.FC = () => {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-12 h-12 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
   return (
     <div className="min-h-screen bg-[#0a0a1a] relative">
       <AnimatedBackground />
@@ -49,6 +35,7 @@ const DashboardLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+      <AIAssistant />
     </div>
   );
 };

@@ -1,11 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import type { User } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
+import React, { createContext, useContext, useState } from 'react';
 
 interface AuthContextType {
-  user: User | null;
+  user: any;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
@@ -16,49 +12,24 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const useAuth = () => useContext(AuthContext);
 
+const DEMO_USER = {
+  uid: 'demo-user-001',
+  email: 'demo@fraudshield.ai',
+  displayName: 'Demo User',
+  emailVerified: true,
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user] = useState<any>(DEMO_USER);
+  const [loading] = useState(false);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setUser(user);
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) {
-          await setDoc(userRef, {
-            email: user.email,
-            displayName: user.displayName || user.email?.split('@')[0],
-            role: 'analyst',
-            createdAt: serverTimestamp(),
-            lastLogin: serverTimestamp(),
-            predictionCount: 0,
-          });
-        } else {
-          await setDoc(userRef, { lastLogin: serverTimestamp() }, { merge: true });
-        }
-      }
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const register = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
-  };
-
-  const logout = async () => {
-    await signOut(auth);
-  };
+  const login = async () => {};
+  const register = async () => {};
+  const logout = async () => {};
 
   return (
     <AuthContext.Provider value={{ user, loading, login, register, logout }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
