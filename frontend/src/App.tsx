@@ -16,6 +16,10 @@ import Reports from './pages/Reports';
 import LiveSimulation from './pages/LiveSimulation';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import BlockedTransactions from './pages/BlockedTransactions';
+import CaseManagement from './pages/CaseManagement';
+import Notifications from './pages/Notifications';
+import SystemHealth from './pages/SystemHealth';
 import NotFound from './pages/NotFound';
 import ForgotPassword from './pages/ForgotPassword';
 
@@ -73,6 +77,10 @@ const App: React.FC = () => {
                 <Route path="explainable-ai" element={<ExplainableAI />} />
                 <Route path="simulation" element={<LiveSimulation />} />
                 <Route path="reports" element={<Reports />} />
+                <Route path="blocked" element={<BlockedTransactions />} />
+                <Route path="cases" element={<CaseManagement />} />
+                <Route path="notifications" element={<Notifications />} />
+                <Route path="system-health" element={<SystemHealth />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
               </Route>

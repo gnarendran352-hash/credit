@@ -1,23 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Download, Eye, TrendingUp, Shield, AlertTriangle, CheckCircle, Sparkles, Clock } from 'lucide-react';
+import { Search, Download, Eye, TrendingUp, Shield, AlertTriangle, CheckCircle, Sparkles, Clock, Filter } from 'lucide-react';
 import GlassCard from '../components/ui/GlassCard';
+import { firebaseService } from '../services/firebase';
+
+interface HistoryItem {
+  id: string | number;
+  date: string;
+  type: string;
+  file: string;
+  records: number;
+  fraud: number;
+  accuracy: number;
+  status: string;
+  time: string;
+}
 
 const History: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedItem, setSelectedItem] = useState<number | null>(null);
+  const [filterRisk, setFilterRisk] = useState<string>('all');
+  const [selectedItemId, setSelectedItemId] = useState<string | number | null>(null);
+  const [predictions, setPredictions] = useState<any[]>([]);
 
-  const historyItems = [
-    { id: 1, date: '2026-07-25', type: 'Batch Prediction', file: 'transactions_july.csv', records: 2500, fraud: 23, accuracy: 99.91, status: 'completed', time: '2.4s' },
-    { id: 2, date: '2026-07-24', type: 'Single Prediction', file: 'Manual Entry', records: 1, fraud: 0, accuracy: 99.87, status: 'completed', time: '0.05s' },
-    { id: 3, date: '2026-07-23', type: 'Batch Prediction', file: 'daily_transactions.csv', records: 1800, fraud: 15, accuracy: 99.89, status: 'completed', time: '1.8s' },
-    { id: 4, date: '2026-07-22', type: 'Batch Prediction', file: 'weekly_data.csv', records: 5200, fraud: 42, accuracy: 99.92, status: 'completed', time: '5.1s' },
-    { id: 5, date: '2026-07-21', type: 'Single Prediction', file: 'Manual Entry', records: 1, fraud: 1, accuracy: 99.95, status: 'flagged', time: '0.04s' },
-  ];
+  useEffect(() => {
+    // In production, subscribe to Firebase predictions here
+    setPredictions([]);
+  }, []);
+
+  const historyItems: HistoryItem[] = predictions.length > 0 ? predictions.map((p: any, i: number) => ({
+    id: p.id || i,
+    date: p.createdAt ? new Date(p.createdAt).toISOString() : new Date().toISOString(),
+    type: 'Prediction',
+    file: `Transaction #${p.transaction_id || i}`,
+    records: 1,
+    fraud: p.prediction === 'Fraud' ? 1 : 0,
+    accuracy: p.confidence || 0,
+    status: p.risk_level === 'High' ? 'flagged' : 'completed',
+    time: '0.05s',
+  })) : [];
 
   const filteredItems = historyItems.filter(item => {
     if (filterStatus !== 'all' && item.status !== filterStatus) return false;
+    if (filterRisk !== 'all') {
+      const itemRisk = predictions[item.id as number]?.risk_level;
+      if (filterRisk !== 'all' && itemRisk !== filterRisk) return false;
+    }
     if (searchQuery && !item.file.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
@@ -69,7 +97,7 @@ const History: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by file name, date..."
+            placeholder="Search by transaction ID, date..."
             className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white/80 placeholder-white/30 text-sm focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all"
           />
         </div>
@@ -90,6 +118,16 @@ const History: React.FC = () => {
             </motion.button>
           ))}
         </div>
+        <select
+          value={filterRisk}
+          onChange={(e) => setFilterRisk(e.target.value)}
+          className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-blue-500/50"
+        >
+          <option value="all">All Risk Levels</option>
+          <option value="High">High Risk</option>
+          <option value="Medium">Medium Risk</option>
+          <option value="Low">Low Risk</option>
+        </select>
       </motion.div>
 
       {/* History List */}
@@ -106,24 +144,18 @@ const History: React.FC = () => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: i * 0.05 }}
                   whileHover={{ scale: 1.005 }}
-                  onClick={() => setSelectedItem(selectedItem === item.id ? null : item.id)}
+                  onClick={() => setSelectedItemId(selectedItemId === item.id ? null : item.id)}
                   className="p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-all cursor-pointer border border-transparent hover:border-white/10"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${
-                        item.type === 'Batch Prediction' ? 'from-blue-500 to-cyan-500' : 'from-purple-500 to-pink-500'
-                      } flex items-center justify-center`}>
-                        {item.type === 'Batch Prediction' ? (
-                          <TrendingUp className="w-6 h-6 text-white" />
-                        ) : (
-                          <Shield className="w-6 h-6 text-white" />
-                        )}
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-white" />
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-white">{item.file}</p>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-xs text-white/40">{item.date}</span>
+                          <span className="text-xs text-white/40">{new Date(item.date).toLocaleString()}</span>
                           <span className="text-xs text-white/30">•</span>
                           <span className="text-xs text-white/40">{item.type}</span>
                           <span className="text-xs text-white/30">•</span>
@@ -155,7 +187,7 @@ const History: React.FC = () => {
 
                   {/* Expanded Details */}
                   <AnimatePresence>
-                    {selectedItem === item.id && (
+                    {selectedItemId !== null && selectedItemId === item.id && (
                       <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}

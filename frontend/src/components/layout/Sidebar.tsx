@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Shield, Brain, Upload, History, BarChart3,
   Radar, FileText, User, Settings, ChevronLeft, ChevronRight,
-  CreditCard, Home, Activity
+  CreditCard, Home, Activity, Bell, Ban, FolderOpen, Gauge
 } from 'lucide-react';
 
 const navItems = [
@@ -17,6 +17,10 @@ const navItems = [
   { to: '/dashboard/explainable-ai', icon: Brain, label: 'Explainable AI' },
   { to: '/dashboard/simulation', icon: Activity, label: 'Live Simulation' },
   { to: '/dashboard/reports', icon: FileText, label: 'Reports' },
+  { to: '/dashboard/blocked', icon: Ban, label: 'Blocked Transactions' },
+  { to: '/dashboard/cases', icon: FolderOpen, label: 'Case Management' },
+  { to: '/dashboard/notifications', icon: Bell, label: 'Notifications' },
+  { to: '/dashboard/system-health', icon: Gauge, label: 'System Health' },
 ];
 
 const bottomNavItems = [

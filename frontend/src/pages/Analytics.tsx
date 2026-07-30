@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import GlassCard from '../components/ui/GlassCard';
 import RiskGauge from '../components/ui/RiskGauge';
 import { getModelMetrics, getFeatureImportance } from '../services/api';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { TrendingUp, Activity, Target, Crosshair, Shield, Brain } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, AreaChart, Area, PieChart, Pie, Legend, ScatterChart, Scatter } from 'recharts';
+import { TrendingUp, Activity, Target, Crosshair, Shield, Brain, DollarSign, Clock, Zap } from 'lucide-react';
 
 const Analytics: React.FC = () => {
   const [metrics, setMetrics] = useState<any>(null);
@@ -69,6 +69,31 @@ const Analytics: React.FC = () => {
     { name: 'FP', value: confusionMatrix.false_positives, color: '#ef4444', label: 'False Positive' },
     { name: 'FN', value: confusionMatrix.false_negatives, color: '#f59e0b', label: 'False Negative' },
     { name: 'TP', value: confusionMatrix.true_positives, color: '#3b82f6', label: 'True Positive' },
+  ];
+
+  const riskTimelineData = [
+    { time: '00:00', risk: 15, confidence: 92 },
+    { time: '04:00', risk: 12, confidence: 94 },
+    { time: '08:00', risk: 28, confidence: 88 },
+    { time: '12:00', risk: 45, confidence: 85 },
+    { time: '16:00', risk: 38, confidence: 87 },
+    { time: '20:00', risk: 22, confidence: 91 },
+  ];
+
+  const amountHistogramData = [
+    { amount: 0, count: 12000 }, { amount: 50, count: 18000 }, { amount: 100, count: 25000 },
+    { amount: 200, count: 32000 }, { amount: 500, count: 28000 }, { amount: 1000, count: 15000 },
+    { amount: 2000, count: 8000 }, { amount: 5000, count: 4000 }, { amount: 10000, count: 2000 },
+  ];
+
+  const processingSpeedData = [
+    { time: '10:00', speed: 125 }, { time: '10:05', speed: 132 }, { time: '10:10', speed: 128 },
+    { time: '10:15', speed: 145 }, { time: '10:20', speed: 138 }, { time: '10:25', speed: 155 },
+  ];
+
+  const fraudVsLegitData = [
+    { name: 'Legitimate', value: 284315, color: '#10b981' },
+    { name: 'Fraud', value: 492, color: '#ef4444' },
   ];
 
   return (
@@ -177,6 +202,59 @@ const Analytics: React.FC = () => {
                   }}
                 />
               </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Additional Analytics Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Risk Timeline */}
+        <GlassCard gradient>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Risk Timeline</h3>
+            <span className="text-xs text-white/30 px-2 py-1 rounded-lg bg-white/5">24h Overview</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={riskTimelineData}>
+                <defs>
+                  <linearGradient id="riskGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="time" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+                <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+                <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
+                <Area type="monotone" dataKey="risk" stroke="#ef4444" fill="url(#riskGrad)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </GlassCard>
+
+        {/* Processing Speed */}
+        <GlassCard gradient>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white">Processing Speed</h3>
+            <span className="text-xs text-white/30 px-2 py-1 rounded-lg bg-white/5">tx/min</span>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={processingSpeedData}>
+                <defs>
+                  <linearGradient id="speedGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="time" stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+                <YAxis stroke="rgba(255,255,255,0.2)" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+                <Tooltip contentStyle={{ background: 'rgba(0,0,0,0.8)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
+                <Area type="monotone" dataKey="speed" stroke="#3b82f6" fill="url(#speedGrad)" strokeWidth={2} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </GlassCard>

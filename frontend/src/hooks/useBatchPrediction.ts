@@ -86,7 +86,7 @@ export const useBatchPrediction = (userId?: string) => {
         const text = await file.text();
         const lines = text.split(/\r?\n/).filter(l => l.trim());
         const headers = lines[0].split(',').map(h => h.trim());
-        const classIdx = headers.indexOf('Class');
+        const classIdx = headers.findIndex(h => h.toLowerCase() === 'class');
         if (classIdx >= 0) {
           classValues = lines.slice(1).map(line => {
             const vals = line.split(',').map(v => v.trim());

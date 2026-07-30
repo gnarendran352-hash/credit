@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { CreditCard, Shield, CheckCircle, AlertTriangle, TrendingUp, Brain, Activity, Zap } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CreditCard, Shield, CheckCircle, AlertTriangle, TrendingUp, Brain, Activity, Zap, Upload, X, Ban, AlertCircle, Bell } from 'lucide-react';
 import GlassCard from '../components/ui/GlassCard';
 import RiskGauge from '../components/ui/RiskGauge';
 import { getHealthStatus, getModelMetrics } from '../services/api';
 import { BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useSimulationEngine } from '../hooks/useSimulationEngine';
+import { useRealtimeDashboard } from '../hooks/useRealtimeDashboard';
+import { ToastContext } from '../App';
 
 const statCards = [
   { title: 'Total Transactions', value: '284,807', icon: CreditCard, change: '+12.5%', color: 'from-blue-500 to-cyan-500', subtext: 'All time' },
@@ -49,6 +52,10 @@ const riskData = [
 const Dashboard: React.FC = () => {
   const [health, setHealth] = useState<any>(null);
   const [metrics, setMetrics] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const sim = useSimulationEngine();
+  const realtime = useRealtimeDashboard();
+  const { showToast } = React.useContext(ToastContext);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,6 +73,41 @@ const Dashboard: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // File upload handler for dashboard
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await sim.loadCSV(file);
+  };
+
+  // Monitor predictions for fraud alerts
+  useEffect(() => {
+    if (sim.predictions.length > 0) {
+      const latestPrediction = sim.predictions[sim.predictions.length - 1];
+      if (latestPrediction.prediction === 'Fraud' && latestPrediction.cancelled) {
+        showToast(`Transaction #${latestPrediction.transaction_id} has been canceled due to fraud detection`, 'warning');
+      }
+    }
+  }, [sim.predictions.length, showToast]);
+
+  // Update realtime dashboard stats when simulation predictions change
+  useEffect(() => {
+    if (sim.predictions.length > 0) {
+      realtime.updateStats(sim.predictions);
+    }
+  }, [sim.predictions.length, realtime]);
+
+  const formatNumber = (n: number) => n.toLocaleString();
+  const formatCurrency = (amount: number) => `$${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  // Recent fraud alerts
+  const recentFraudAlerts = sim.predictions
+    .filter(p => p.prediction === 'Fraud')
+    .slice(-5)
+    .reverse();
+
+  const liveStats = realtime.stats;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -79,9 +121,16 @@ const Dashboard: React.FC = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">Dashboard</h1>
           <p className="text-white/40 mt-1">Real-time fraud detection overview</p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-          <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-          <span className="text-xs text-emerald-400 font-medium">System Online</span>
+        <div className="flex items-center gap-3">
+          <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+          <button onClick={() => fileInputRef.current?.click()} className="px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all text-sm font-medium flex items-center gap-2">
+            <Upload className="w-4 h-4" />
+            Upload CSV
+          </button>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+            <span className="text-xs text-emerald-400 font-medium">System Online</span>
+          </div>
         </div>
       </motion.div>
 
@@ -98,12 +147,22 @@ const Dashboard: React.FC = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-white/40">{card.title}</p>
-                  <p className="text-2xl font-bold text-white mt-1">{card.value}</p>
+                  <p className="text-2xl font-bold text-white mt-1">
+                    {sim.simState.status !== 'idle' && card.title !== 'Fraud Rate'
+                      ? card.title === 'Total Transactions'
+                        ? formatNumber(sim.liveStats.processedCount)
+                        : card.title === 'Fraud Detected'
+                        ? formatNumber(sim.liveStats.fraudCount)
+                        : card.title === 'Legitimate'
+                        ? formatNumber(sim.liveStats.legitimateCount)
+                        : card.value
+                      : card.value}
+                  </p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`text-xs font-medium ${card.change.startsWith('+') ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {card.change}
+                      {sim.simState.status !== 'idle' ? 'Processing...' : card.change}
                     </span>
-                    <span className="text-xs text-white/30">vs last month</span>
+                    <span className="text-xs text-white/30">{sim.simState.status !== 'idle' ? 'Live' : 'vs last month'}</span>
                   </div>
                 </div>
                 <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.color} flex items-center justify-center shadow-lg shadow-${card.color.split(' ')[0].replace('from-', '')}/30`}>
@@ -223,6 +282,48 @@ const Dashboard: React.FC = () => {
           </div>
         </GlassCard>
       </div>
+
+      {/* Fraud Alerts Panel */}
+      {sim.simState.status !== 'idle' && recentFraudAlerts.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <GlassCard gradient>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-orange-600 flex items-center justify-center">
+                <Bell className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Fraud Alerts</h3>
+                <p className="text-xs text-white/40">Recent blocked transactions</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {recentFraudAlerts.map((alert, i) => (
+                <motion.div
+                  key={alert.transaction_id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  className="flex items-center justify-between p-3 rounded-xl bg-red-500/10 border border-red-500/20"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
+                      <Ban className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-red-300">Transaction #{alert.transaction_id}</p>
+                      <p className="text-xs text-red-300/60">Transaction is canceled - Fraud detected</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-red-400">{formatCurrency(alert.amount)}</p>
+                    <p className="text-xs text-red-300/60">Risk: {alert.risk_score.toFixed(0)}/100</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </GlassCard>
+        </motion.div>
+      )}
 
       {/* Bottom Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -1,98 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Shield, Brain, Zap, BarChart3, ArrowRight, Sparkles, CreditCard,
-  Activity, TrendingUp, AlertTriangle, CheckCircle, X, Radio,
-  DollarSign, Clock, Gauge, Ban, ShieldOff
+  Activity, TrendingUp, AlertTriangle, CheckCircle
 } from 'lucide-react';
 import AnimatedBackground from '../components/ui/AnimatedBackground';
 import AdvancedButton from '../components/ui/AdvancedButton';
 import GlassCard from '../components/ui/GlassCard';
-import RiskGauge from '../components/ui/RiskGauge';
-
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-const formatCurrency = (val: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
 
 const Landing: React.FC = () => {
   const navigate = useNavigate();
-  const [txFeed, setTxFeed] = useState<any[]>([]);
-  const [stats, setStats] = useState({ processed: 0, fraud: 0, legitimate: 0 });
-  const [currentTx, setCurrentTx] = useState<any>(null);
-  const [connected, setConnected] = useState(false);
-  const feedRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let simulationId: string | null = null;
-    let eventSource: EventSource | null = null;
-    let mounted = true;
-
-    const startSimulation = async () => {
-      try {
-        // Start simulation on backend
-        const res = await fetch(`${API_BASE}/simulation/start`, { method: 'POST' });
-        const data = await res.json();
-        simulationId = data.simulation_id;
-
-        if (!mounted) return;
-
-        // Connect SSE stream
-        eventSource = new EventSource(`${API_BASE}/simulation/${simulationId}/stream`);
-        eventSource.onmessage = (event) => {
-          if (!mounted) return;
-          try {
-            const tx = JSON.parse(event.data);
-            if (tx.error) return;
-            setCurrentTx(tx);
-            setStats(prev => ({
-              processed: prev.processed + 1,
-              fraud: prev.fraud + (tx.prediction === 'Fraud' ? 1 : 0),
-              legitimate: prev.legitimate + (tx.prediction === 'Legitimate' ? 1 : 0),
-            }));
-            setTxFeed(prev => [{
-              id: `tx-${tx.transaction_id}-${Date.now()}`,
-              timestamp: new Date().toLocaleTimeString(),
-              type: tx.prediction === 'Fraud' ? 'DECLINED' : 'APPROVED',
-              amount: tx.amount,
-              transactionId: tx.transaction_id,
-              riskScore: tx.risk_score,
-              prediction: tx.prediction,
-            }, ...prev].slice(0, 100));
-            setConnected(true);
-          } catch (e) {}
-        };
-
-        eventSource.onerror = () => {
-          if (mounted) {
-            // Reconnect after 2s
-            setTimeout(() => { eventSource?.close(); startSimulation(); }, 2000);
-          }
-        };
-      } catch (e) {
-        if (mounted) setTimeout(startSimulation, 2000);
-      }
-    };
-
-    startSimulation();
-
-    return () => {
-      mounted = false;
-      eventSource?.close();
-      if (simulationId) {
-        fetch(`${API_BASE}/simulation/${simulationId}/control`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'stop' }),
-        }).catch(() => {});
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (feedRef.current) feedRef.current.scrollTop = 0;
-  }, [txFeed.length]);
 
   return (
     <div className="min-h-screen bg-[#050510] overflow-y-auto relative">
@@ -114,12 +32,6 @@ const Landing: React.FC = () => {
           <span className="text-xl font-bold text-white">FraudShield</span>
         </div>
         <div className="flex items-center gap-4">
-          {connected && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-              <span className="text-xs text-emerald-400 font-medium">LIVE</span>
-            </div>
-          )}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -132,7 +44,7 @@ const Landing: React.FC = () => {
       </nav>
 
       {/* Hero */}
-      <section className="relative z-10 max-w-7xl mx-auto px-8 pt-12 pb-8">
+      <section className="relative z-10 max-w-7xl mx-auto px-8 pt-20 pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -140,8 +52,8 @@ const Landing: React.FC = () => {
             transition={{ delay: 0.2 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 text-blue-400 text-sm mb-4"
           >
-            <Radio className={`w-4 h-4 ${connected ? 'animate-pulse' : ''}`} />
-            <span className="font-medium">{connected ? 'LIVE — Streaming creditcard_2023.csv' : 'Connecting to simulation...'}</span>
+            <Sparkles className="w-4 h-4" />
+            <span className="font-medium">AI-Powered Fraud Detection</span>
           </motion.div>
 
           <motion.h1
@@ -161,196 +73,98 @@ const Landing: React.FC = () => {
             transition={{ delay: 0.4 }}
             className="text-lg text-white/50 max-w-2xl mx-auto mb-8"
           >
-            Streaming creditcard_2023.csv through the ML model — watching each transaction live with AI-powered fraud detection
+            Enterprise-grade ML fraud detection with 99.91% accuracy. Upload your CSV and get instant predictions.
           </motion.p>
         </motion.div>
       </section>
 
-      {/* Live Stats + Feed */}
+      {/* Upload Section */}
       <section className="relative z-10 max-w-7xl mx-auto px-8 pb-16">
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left: Live Feed */}
+          {/* Upload Card */}
           <div className="lg:col-span-2">
-            <GlassCard className="p-0 overflow-hidden" gradient>
-              <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Radio className="w-4 h-4 text-emerald-400" />
-                  <h2 className="font-semibold text-white text-sm">Live Transaction Feed</h2>
+            <GlassCard gradient glow>
+              <div className="flex flex-col items-center justify-center py-16">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-500 via-purple-600 to-pink-500 flex items-center justify-center mb-6 shadow-2xl shadow-blue-500/30"
+                >
+                  <Zap className="w-10 h-10 text-white" />
+                </motion.div>
+                <h2 className="text-3xl font-bold text-white mb-3">Upload Transaction CSV</h2>
+                <p className="text-white/50 mb-8 text-center max-w-xl text-lg">
+                  Upload a credit card transaction CSV to start <span className="text-emerald-400 font-semibold">real-time fraud monitoring</span>.
+                  Transactions will be analyzed instantly with AI.
+                </p>
+                <AdvancedButton
+                  variant="gradient"
+                  size="lg"
+                  glow
+                  icon={<ArrowRight className="w-5 h-5" />}
+                  onClick={() => navigate('/dashboard')}
+                >
+                  Upload & Start Detection
+                </AdvancedButton>
+                <div className="flex flex-wrap gap-6 mt-8 text-sm text-white/30">
+                  <span>📊 Supports up to 1,000,000 transactions</span>
+                  <span>🔢 30 features (V1-V28, Time, Amount)</span>
+                  <span>⚡ Real-time predictions via ML model</span>
                 </div>
-                <span className="text-xs text-white/40">{stats.processed} processed</span>
-              </div>
-              <div ref={feedRef} className="h-[500px] overflow-y-auto p-3 space-y-1.5">
-                {txFeed.length === 0 && (
-                  <div className="flex items-center justify-center h-full text-white/30 text-sm">
-                    <div className="text-center">
-                      <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-3" />
-                      Streaming transactions...
-                    </div>
-                  </div>
-                )}
-                <AnimatePresence initial={false}>
-                  {txFeed.map((entry) => (
-                    <motion.div
-                      key={entry.id}
-                      initial={{ opacity: 0, y: -20, height: 0 }}
-                      animate={{ opacity: 1, y: 0, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25 }}
-                      className={`p-2.5 rounded-xl border cursor-default transition-all ${
-                        entry.type === 'DECLINED'
-                          ? 'bg-red-500/10 border-red-500/30'
-                          : 'bg-emerald-500/10 border-emerald-500/20'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${
-                            entry.type === 'DECLINED' ? 'bg-red-500' : 'bg-emerald-500'
-                          }`}>
-                            {entry.type === 'DECLINED' ? (
-                              <X className="w-3.5 h-3.5 text-white" />
-                            ) : (
-                              <CheckCircle className="w-3.5 h-3.5 text-white" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-white">
-                              #{entry.transactionId}
-                            </p>
-                            <p className="text-[10px] text-white/40">{entry.timestamp}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs font-semibold text-white">{formatCurrency(entry.amount)}</p>
-                          <p className={`text-[10px] ${
-                            entry.type === 'DECLINED' ? 'text-red-400' : 'text-emerald-400'
-                          }`}>
-                            {entry.type === 'DECLINED' ? '🚨 BLOCKED' : '✅ APPROVED'}
-                          </p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
               </div>
             </GlassCard>
           </div>
 
-          {/* Right: Stats Panel */}
+          {/* Stats Panel */}
           <div className="space-y-4">
-            {/* Current Transaction */}
             <GlassCard gradient>
               <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
-                <Activity className="w-4 h-4 text-blue-400" /> Current Transaction
+                <Shield className="w-4 h-4 text-blue-400" /> Model Performance
               </h3>
-              {currentTx ? (
-                <div className="space-y-2">
-                  <div className={`p-3 rounded-xl border ${
-                    currentTx.prediction === 'Fraud' ? 'bg-red-500/10 border-red-500/20' : 'bg-emerald-500/10 border-emerald-500/20'
-                  }`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs text-white/40">#{currentTx.transaction_id}</span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                        currentTx.prediction === 'Fraud' ? 'bg-red-500/20 text-red-300' : 'bg-emerald-500/20 text-emerald-300'
-                      }`}>
-                        {currentTx.prediction === 'Fraud' ? 'FRAUD' : 'SAFE'}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-white/60">Amount</span>
-                      <span className="text-white font-semibold">{formatCurrency(currentTx.amount)}</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-white/60">Risk Score</span>
-                      <span className={`font-bold ${
-                        currentTx.risk_score > 70 ? 'text-red-400' : currentTx.risk_score > 30 ? 'text-yellow-400' : 'text-emerald-400'
-                      }`}>
-                        {currentTx.risk_score.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-white/60">Confidence</span>
-                      <span className="text-blue-400 font-bold">{currentTx.confidence.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm mt-1">
-                      <span className="text-white/60">Decision</span>
-                      <span className={`text-xs font-bold ${
-                        currentTx.decision?.decision === 'APPROVE' ? 'text-emerald-400' : 'text-red-400'
-                      }`}>
-                        {currentTx.decision?.decision?.replace(/_/g, ' ') || 'PENDING'}
-                      </span>
-                    </div>
-                  </div>
-                  {currentTx.explanation?.summary && (
-                    <p className="text-[10px] text-white/40 italic line-clamp-2">
-                      {currentTx.explanation.summary}
-                    </p>
-                  )}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/60">Accuracy</span>
+                  <span className="text-sm font-bold text-emerald-400">99.91%</span>
                 </div>
-              ) : (
-                <div className="flex items-center justify-center h-32 text-white/30 text-xs">
-                  Waiting for transactions...
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/60">ROC-AUC</span>
+                  <span className="text-sm font-bold text-blue-400">0.9999</span>
                 </div>
-              )}
-            </GlassCard>
-
-            {/* Live Stats */}
-            <GlassCard gradient>
-              <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
-                <BarChart3 className="w-4 h-4 text-purple-400" /> Live Stats
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2.5 rounded-xl bg-white/5">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Activity className="w-3 h-3 text-blue-400" />
-                    <p className="text-[10px] text-white/40">Processed</p>
-                  </div>
-                  <p className="text-lg font-bold text-white">{stats.processed.toLocaleString()}</p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/5">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <AlertTriangle className="w-3 h-3 text-red-400" />
-                    <p className="text-[10px] text-white/40">Fraud</p>
-                  </div>
-                  <p className="text-lg font-bold text-red-400">{stats.fraud.toLocaleString()}</p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/5">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <CheckCircle className="w-3 h-3 text-emerald-400" />
-                    <p className="text-[10px] text-white/40">Safe</p>
-                  </div>
-                  <p className="text-lg font-bold text-emerald-400">{stats.legitimate.toLocaleString()}</p>
-                </div>
-                <div className="p-2.5 rounded-xl bg-white/5">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <Gauge className="w-3 h-3 text-purple-400" />
-                    <p className="text-[10px] text-white/40">Fraud Rate</p>
-                  </div>
-                  <p className="text-lg font-bold text-white">
-                    {stats.processed > 0 ? ((stats.fraud / stats.processed) * 100).toFixed(2) : '0.00'}%
-                  </p>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/60">Precision</span>
+                  <span className="text-sm font-bold text-purple-400">98.5%</span>
                 </div>
               </div>
             </GlassCard>
 
-            {/* Risk Gauge */}
-            {currentTx && (
-              <GlassCard gradient>
-                <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-orange-400" /> Risk Level
-                </h3>
-                <RiskGauge
-                  value={currentTx.risk_score}
-                  size={140}
-                  label={`TX #${currentTx.transaction_id}`}
-                />
-              </GlassCard>
-            )}
+            <GlassCard gradient>
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-3">
+                <Activity className="w-4 h-4 text-emerald-400" /> Features
+              </h3>
+              <ul className="space-y-2">
+                <li className="flex items-center gap-2 text-xs text-white/60">
+                  <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  Real-time batch predictions
+                </li>
+                <li className="flex items-center gap-2 text-xs text-white/60">
+                  <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  Explainable AI insights
+                </li>
+                <li className="flex items-center gap-2 text-xs text-white/60">
+                  <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  Fraud alerts & notifications
+                </li>
+                <li className="flex items-center gap-2 text-xs text-white/60">
+                  <CheckCircle className="w-3 h-3 text-emerald-400" />
+                  Transaction cancellation
+                </li>
+              </ul>
+            </GlassCard>
 
             {/* CTA */}
             <GlassCard gradient glow>
               <div className="text-center">
-                <p className="text-sm text-white/60 mb-3">View full analysis with charts, history & reports</p>
+                <p className="text-sm text-white/60 mb-3">Ready to start detecting fraud?</p>
                 <AdvancedButton
                   variant="gradient"
                   size="sm"
@@ -358,7 +172,7 @@ const Landing: React.FC = () => {
                   icon={<ArrowRight className="w-4 h-4" />}
                   onClick={() => navigate('/dashboard')}
                 >
-                  Open Full Dashboard
+                  Go to Dashboard
                 </AdvancedButton>
               </div>
             </GlassCard>
@@ -371,13 +185,7 @@ const Landing: React.FC = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 text-white/40 text-sm">
             <CreditCard className="w-4 h-4" />
-            <span>FraudShield AI • Simulating creditcard_2023.csv</span>
-          </div>
-          <div className="flex items-center gap-4 text-white/30 text-xs">
-            <span className="flex items-center gap-1">
-              <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-              {stats.processed} transactions streamed
-            </span>
+            <span>FraudShield AI • Enterprise-grade fraud detection</span>
           </div>
         </div>
       </footer>

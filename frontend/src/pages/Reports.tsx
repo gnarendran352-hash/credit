@@ -4,10 +4,12 @@ import { FileText, Download, Calendar, Clock, BarChart3, TrendingUp, Shield, Ale
 import { jsPDF } from 'jspdf';
 import GlassCard from '../components/ui/GlassCard';
 import AdvancedButton from '../components/ui/AdvancedButton';
+import { getModelMetrics } from '../services/api';
 
 const Reports: React.FC = () => {
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
   const [generating, setGenerating] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<'pdf' | 'excel' | 'csv' | 'json'>('pdf');
 
   const reports = [
     { title: 'Daily Fraud Report', date: '2026-07-25', type: 'PDF', size: '2.4 MB', icon: Calendar, status: 'ready', color: 'from-blue-500 to-cyan-500', period: 'daily' },
@@ -98,7 +100,27 @@ const Reports: React.FC = () => {
     },
   };
 
-  const generatePDF = (period: string) => {
+  const generateReport = async (period: string) => {
+    setGenerating(period);
+    try {
+      const metrics = await getModelMetrics();
+      
+      if (exportFormat === 'pdf') {
+        generatePDF(period, metrics);
+      } else if (exportFormat === 'json') {
+        generateJSON(period, metrics);
+      } else {
+        // For CSV/Excel, use simple text-based export
+        generateCSV(period, metrics);
+      }
+    } catch (error) {
+      console.error('Failed to generate report:', error);
+    } finally {
+      setGenerating(null);
+    }
+  };
+
+  const generatePDF = (period: string, metrics: any) => {
     const data = reportData[period as keyof typeof reportData] || reportData.daily;
     const doc = new jsPDF('p', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -158,7 +180,7 @@ const Reports: React.FC = () => {
     doc.setTextColor(120, 120, 140);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text('CreditGuard AI - Fraud Detection System', 20, 278);
+    doc.text('FraudShield AI - Fraud Detection System', 20, 278);
     doc.text('Page 1 - Confidential', pageWidth - 20, 278, { align: 'right' });
 
     const blob = doc.output('blob');
@@ -170,16 +192,51 @@ const Reports: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const generateJSON = (period: string, metrics: any) => {
+    const data = reportData[period as keyof typeof reportData] || reportData.daily;
+    const report = {
+      title: data.title,
+      date: data.date,
+      summary: data.summary,
+      stats: data.stats,
+      details: data.details,
+      modelMetrics: metrics,
+      generatedAt: new Date().toISOString(),
+    };
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.title.replace(/\s+/g, '_')}_${data.date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const generateCSV = (period: string, _metrics: any) => {
+    const data = reportData[period as keyof typeof reportData] || reportData.daily;
+    let csv = 'Metric,Value\n';
+    Object.entries(data.stats).forEach(([key, value]) => {
+      csv += `${key},${value}\n`;
+    });
+    csv += '\nDetail,Value\n';
+    data.details.forEach((detail) => {
+      csv += `${detail.label},${detail.value}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${data.title.replace(/\s+/g, '_')}_${data.date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleDownload = (period: string) => {
-    setGenerating(period);
-    setTimeout(() => {
-      generatePDF(period);
-      setGenerating(null);
-    }, 500);
+    generateReport(period);
   };
 
   const handleGenerate = (period: string) => {
-    handleDownload(period);
+    generateReport(period);
   };
 
   return (
@@ -199,6 +256,30 @@ const Reports: React.FC = () => {
           <span className="text-xs text-emerald-400 font-medium">{reports.length} Reports Available</span>
         </div>
       </motion.div>
+
+      {/* Export Format Selector */}
+      <GlassCard>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-white/60">Export Format:</span>
+          {[
+            { key: 'pdf', label: 'PDF', icon: FileText },
+            { key: 'csv', label: 'CSV', icon: BarChart3 },
+            { key: 'json', label: 'JSON', icon: FileText },
+          ].map((fmt) => (
+            <button
+              key={fmt.key}
+              onClick={() => setExportFormat(fmt.key as any)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                exportFormat === fmt.key
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                  : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              {fmt.label}
+            </button>
+          ))}
+        </div>
+      </GlassCard>
 
       {/* Report Generation Cards */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -230,7 +311,7 @@ const Reports: React.FC = () => {
                   onClick={() => handleGenerate(item.key)}
                   disabled={generating === item.key}
                 >
-                  {generating === item.key ? 'Generating...' : 'Generate & Download PDF'}
+                  {generating === item.key ? 'Generating...' : `Generate ${exportFormat.toUpperCase()}`}
                 </AdvancedButton>
               </div>
             </GlassCard>

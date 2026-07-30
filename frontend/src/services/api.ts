@@ -30,7 +30,7 @@ export const batchPredict = async (
     '/batch_predict',
     formData,
     {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },
       timeout: 300000,
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
@@ -115,10 +115,12 @@ export const parseCSVPreview = async (file: File): Promise<CSVPreviewData> => {
           return values;
         });
 
-        // Accept 'id' as 'Time' for validation
-        const requiredCols = ['Time', 'Amount', ...Array.from({ length: 28 }, (_, i) => `V${i + 1}`)];
+        // Normalize headers for case-insensitive column matching
+        const headerLower = headers.map(h => h.toLowerCase());
+        const hasId = headerLower.includes('id');
         const validationErrors: string[] = [];
-        const missingCols = requiredCols.filter(col => !headers.includes(col) && !(col === 'Time' && headers.includes('id')));
+        const requiredColLower = ['time', 'amount', ...Array.from({ length: 28 }, (_, i) => `v${i + 1}`)];
+        const missingCols = requiredColLower.filter(col => !headerLower.includes(col) && !(col === 'time' && hasId));
         if (missingCols.length > 0) {
           validationErrors.push(`Missing required columns: ${missingCols.join(', ')}`);
         }
@@ -147,7 +149,7 @@ export const parseCSVPreview = async (file: File): Promise<CSVPreviewData> => {
         const uniqueRows = new Set(allRows);
         const duplicateRows = allRows.length - uniqueRows.size;
 
-        const hasClassColumn = headers.includes('Class');
+        const hasClassColumn = headers.some(h => h.toLowerCase() === 'class');
 
         resolve({
           headers,

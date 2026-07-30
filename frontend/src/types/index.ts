@@ -92,12 +92,53 @@ export interface PredictionRecord {
 }
 
 export interface Notification {
-  id: string;
+  id?: string;
   type: 'fraud_alert' | 'prediction_success' | 'upload_complete' | 'backend_offline' | 'info';
   title: string;
   message: string;
-  timestamp: string;
-  read: boolean;
+  timestamp?: string;
+  read?: boolean;
+}
+
+export interface Case {
+  id?: string;
+  transactionId?: string;
+  status: 'open' | 'investigating' | 'resolved' | 'false_positive' | 'closed';
+  assignedTo?: string;
+  notes: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BlockedTransaction {
+  id?: string;
+  transaction_id: number;
+  prediction: string;
+  fraud_probability: number;
+  risk_score: number;
+  risk_level: string;
+  amount: number;
+  reason?: string;
+  timestamp?: string;
+  operator?: string;
+  status?: string;
+}
+
+export interface LivePrediction {
+  transaction_id: number;
+  amount: number;
+  time: number;
+  prediction: string;
+  fraud_probability: number;
+  risk_score: number;
+  risk_level: 'Low' | 'Medium' | 'High';
+  confidence: number;
+  top_features: { feature: string; importance: number }[];
+  explanation: string | Record<string, any>;
+  cancelled: boolean;
+  processedAt: number;
+  paymentStatus?: string;
+  nlExplanation?: string;
 }
 
 export type ThemeMode = 'dark' | 'light';

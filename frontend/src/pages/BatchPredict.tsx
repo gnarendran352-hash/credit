@@ -304,6 +304,29 @@ const BatchPredict: React.FC = () => {
         </motion.div>
       )}
 
+      {/* ─── Error State ─── */}
+      {sim.simState.status === 'error' && (
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+          <GlassCard gradient glow>
+            <div className="flex flex-col items-center justify-center py-16">
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-red-500 via-red-600 to-orange-600 flex items-center justify-center mb-6 shadow-2xl shadow-red-500/30">
+                <AlertCircle className="w-12 h-12 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-white mb-3">Prediction Failed</h2>
+              <p className="text-red-300/80 mb-2 text-center max-w-xl">
+                {sim.backendError || 'An unknown error occurred while processing the CSV.'}
+              </p>
+              <p className="text-white/40 mb-8 text-center max-w-lg text-sm">
+                Ensure your CSV has the required columns: Time, V1-V28, Amount. Column names are case-insensitive.
+              </p>
+              <AdvancedButton variant="gradient" size="lg" icon={<Upload className="w-5 h-5" />} onClick={() => sim.stop()}>
+                Try Again
+              </AdvancedButton>
+            </div>
+          </GlassCard>
+        </motion.div>
+      )}
+
       {/* ─── CSV Analytics & Start Controls ─── */}
       {sim.csvAnalytics && sim.simState.status === 'idle' && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

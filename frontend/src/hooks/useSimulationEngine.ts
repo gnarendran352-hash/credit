@@ -507,8 +507,16 @@ export const useSimulationEngine = () => {
         columnNames: ['Time', ...Array.from({ length: 28 }, (_, i) => `V${i + 1}`), 'Amount'],
       });
     } catch (err: any) {
-      console.error('Backend prediction failed:', err);
-      setBackendError(err.message || 'Failed to get predictions from backend');
+      const errorMsg =
+        err.response?.data?.detail
+          ? err.response.data.detail
+          : err.code === 'ECONNABORTED'
+            ? 'Request timed out. Please try again.'
+            : err.response?.status === 413
+              ? 'File too large. Maximum size is 10MB.'
+              : err.message || 'Failed to get predictions from backend';
+      console.error('Backend prediction failed:', errorMsg, err);
+      setBackendError(errorMsg);
       setSimState(prev => ({ ...prev, status: 'error' }));
     }
     setIsLoadingBackend(false);

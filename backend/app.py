@@ -448,9 +448,21 @@ async def batch_predict(file: UploadFile = File(...)):
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Invalid CSV file: {str(e)}")
 
-    # Handle 'id' column as 'Time' if 'Time' is not present
-    if 'Time' not in df.columns and 'id' in df.columns:
-        df = df.rename(columns={'id': 'Time'})
+    # Normalize column names to title case for case-insensitive matching
+    col_mapping = {}
+    for col in df.columns:
+        col_lower = col.strip().lower()
+        if col_lower == 'time':
+            col_mapping[col] = 'Time'
+        elif col_lower == 'amount':
+            col_mapping[col] = 'Amount'
+        elif col_lower == 'class':
+            col_mapping[col] = 'Class'
+        elif col_lower.startswith('v') and col_lower[1:].isdigit():
+            col_mapping[col] = col_lower.replace('v', 'V')
+        elif col_lower == 'id':
+            col_mapping[col] = 'Time'
+    df = df.rename(columns=col_mapping)
 
     required_cols = ['Time', 'Amount'] + [f'V{i}' for i in range(1, 29)]
     missing = [c for c in required_cols if c not in df.columns]
