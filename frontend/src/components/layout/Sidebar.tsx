@@ -9,7 +9,6 @@ import {
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/dashboard/predict', icon: Shield, label: 'Predict' },
   { to: '/dashboard/batch-predict', icon: Upload, label: 'Batch Prediction' },
   { to: '/dashboard/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/dashboard/history', icon: History, label: 'History' },

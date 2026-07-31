@@ -16,7 +16,8 @@ import joblib
 
 # ── Model Loading ──
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "credit_card_fraud_model.pkl")
+# Model is in the project root (Credit/), go up: frontend/functions/ -> frontend/ -> Credit/
+MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), "credit_card_fraud_model.pkl")
 
 model = None
 model_available = False
@@ -31,14 +32,14 @@ except Exception as e:
 
 # ── Feature Importance ──
 FEATURE_IMPORTANCE = {
-    'V14': 0.152, 'V17': 0.124, 'V12': 0.112, 'V10': 0.098,
-    'V11': 0.087, 'V16': 0.079, 'V3': 0.072, 'V9': 0.065,
-    'V7': 0.058, 'V4': 0.051, 'V18': 0.045, 'V6': 0.039,
-    'V2': 0.034, 'V1': 0.029, 'V5': 0.024, 'V8': 0.019,
-    'V13': 0.015, 'V15': 0.011, 'V19': 0.008, 'V20': 0.006,
-    'V21': 0.005, 'V22': 0.003, 'V23': 0.002, 'V24': 0.002,
-    'V25': 0.001, 'V26': 0.001, 'V27': 0.001, 'V28': 0.001,
-    'Time': 0.012, 'Amount': 0.030
+    'V14': 0.2233, 'V10': 0.1265, 'V4': 0.1129, 'V12': 0.1049,
+    'V17': 0.0835, 'V3': 0.0717, 'V11': 0.0482, 'V2': 0.0390,
+    'V16': 0.0387, 'V9': 0.0269, 'V21': 0.0142, 'V7': 0.0135,
+    'V1': 0.0102, 'V18': 0.0079, 'Time': 0.0077, 'V6': 0.0075,
+    'V8': 0.0066, 'V13': 0.0061, 'V27': 0.0053, 'V19': 0.0052,
+    'V20': 0.0051, 'V28': 0.0050, 'Amount': 0.0041, 'V26': 0.0041,
+    'V5': 0.0040, 'V22': 0.0039, 'V15': 0.0039, 'V23': 0.0035,
+    'V25': 0.0034, 'V24': 0.0033
 }
 
 # ── CORS Headers ──

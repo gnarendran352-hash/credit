@@ -6,7 +6,6 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Predict from './pages/Predict';
 import BatchPredict from './pages/BatchPredict';
 import Analytics from './pages/Analytics';
 import History from './pages/History';
@@ -69,7 +68,6 @@ const App: React.FC = () => {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<Dashboard />} />
-                <Route path="predict" element={<Predict />} />
                 <Route path="batch-predict" element={<BatchPredict />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="history" element={<History />} />
