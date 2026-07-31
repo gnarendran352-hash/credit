@@ -45,6 +45,8 @@ venv.bak/
 # --- Large Dataset Files ---
 # CSV dataset exceeds GitHub's 100MB limit; keep local only
 creditcard_2023.csv
+dataset/creditcard.csv
+dataset/
 # --- Logs ---
 logs/
 *.log
